@@ -1,0 +1,5 @@
+# Ignorer tous les node_modules du projet
+**/node_modules/
+
+# Ignorer les fichiers .env (s'ils sont dans backend ou frontend)
+backend/.env
