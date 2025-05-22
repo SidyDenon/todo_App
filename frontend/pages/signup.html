@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="../styles/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&display=swap" rel="stylesheet" />
+  <title>Inscription</title>
+</head>
+<body class="main">
+  <div class="iphone">
+    <form class="form" id="signupForm">
+      <h3 id="messageBv">Heureux de vous compter parmi nous</h3>
+      <p class="form-title">S’enregistrer</p>
+      <div class="input-container">
+        <input type="text" name="username" id="username" placeholder="Entrez votre nom" required />
+      </div>
+      <div class="input-container">
+        <input type="text" name="email" id="email" placeholder="Entrez votre email" required />
+      </div>
+      <div class="input-container">
+        <input type="password" name="password" id="password" placeholder="Entrez un mot de passe" required />
+      </div>
+      <button type="submit" class="submit">S’inscrire</button>
+      <p class="signup-link">
+        Vous avez déjà un compte ?
+        <a href="login.html">Se connecter</a>
+      </p>
+    </form>
+  </div>
+
+  <script>
+    const apiUrl = "http://localhost:4000";
+
+    const form = document.getElementById("signupForm");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = form.username.value.trim();
+      const email = form.email.value.trim();
+      const password = form.password.value.trim();
+
+      try {
+        const res = await fetch(apiUrl + "/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, email, password }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.message || "Erreur inscription");
+        }
+
+        alert("Inscription réussie, connectez-vous !");
+        window.location.href = "login.html";
+      } catch (err) {
+        alert("Erreur : " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>

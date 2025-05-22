@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../styles/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&display=swap" rel="stylesheet">
+    <title>TO-DO APP</title>
+</head>
+<body class="main">
+  <div class="iphone">
+            <div class="clos-notif"><button id="notification-toggle">Activer notifications</button>
+                    <div id="toast"></div></div>
+            <div class="themes">
+                <i class="fa-solid fa-sun " id="toggleSunBtn"></i>
+                <i class="fa-solid fa-moon" id="toggleMoonBtn"></i>
+            </div>
+            <div class="backdrop-color"></div>
+            <div class="ecran ecran-1">
+                <div class="iphone-top">
+                    <a><i class="fa-solid fa-bars"></i></a>
+                    <div class="welcome">
+                       <div class="contenu">
+                        <h1>Salut <span class="Username"></span></h1>
+                        <p>Aujourd’hui vous avez <span class="tacheTotal"></span> tâches</p>
+                       </div> 
+                       <div class="image">
+                        <div class="cercle-blanc"></div>
+                        <img src="../styles/images/boy.png" alt="boy" srcset="">
+                       </div>
+                    </div>
+                </div>
+                <div class="categories-box">
+                    <div class="categories">
+                        <div class="category">
+                            <!-- <div class="left">
+                                <img src="styles/images/boy.png" alt="boy">
+                                <div class="contenu">
+                                    <h1>Personal</h1>
+                                    <p><span class="nb-task">5</span> Tâches</p>
+                                </div>
+                            </div> -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ecran ecran-2 active ">
+                <div class="head-icon">
+                <a><i class="fa-solid fa-arrow-left-long" id="arrow"></i></a>
+                </div>
+                <div class="details">
+                <img src="styles/images/boy.png" alt="boy" id="categories-img">
+                <div class="details-contenu">
+                    <p class="category-tache">5 Tâches</p>
+                    <h1 class="category-titre">Personnel</h1>
+                </div>
+                </div>
+                <div class="Pages-taches">
+                <div class="tasks">
+                    <div class="task-wrapper">
+                       <label for="task" class="task">
+                        <input type="checkbox" name="" id="task">
+                       <a> <i class="fa-solid fa-check"></i></a>
+                        <p>Buy a new car</p>
+                       </label>
+                      <div class="sup-write">
+                        <a><i class="fa-regular fa-pen-to-square edit"></i></a>
+                        <a><i class="fa-regular fa-trash-can delete"></i></a>
+                      </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <div class="filtre "></div>
+            <div class="nav-filter"></div>
+
+            <div class="add-task">
+                <i class="fa-solid fa-plus"></i>
+            </div>
+
+            <div class="box-tache " id="box-tache">
+                <div class="box-tache-form">
+                  <div class="input-1 tache-input">
+                    <label for="text">Tâche</label>
+                    <input type="text" name="taches" id="taches-input" required>
+                </div>
+                <div class="input-1 category-select">
+                    <label for="categories-select">Category</label>
+                    <select name="categories-select" id="categories-select">
+                        <!-- <option value="Personnel">Personnel</option> -->
+                    </select>
+                </div>
+                <div class="btns">
+                  <button class="cancel-btns">Cancel</button>
+                  <button class="add-btns" id="add-btn">Add</button>
+                  <button class="edit-btns" id="edit-btn">Change</button>
+                </div>
+                </div>
+            </div>
+            
+            <div class="nav-page active">
+                <div class="top">
+                    <i class="fa-solid fa-plus close"></i>
+                    <div class="cercle"></div>
+                    <img src="../styles/images/boy.png" alt="boys">
+                    <h1>Mr<br><span class="Username2"></span></h1>
+                    <div class="modifier">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </div>
+                </div>
+                <div class="bottom">
+                    <h1 class="decon"><a href="#" id="logout-btn">Déconnexion</a></h1>
+                </div>
+            </div>
+            
+            <div class="nav-page-out active">
+                <div class="top">
+                    <i class="fa-solid fa-plus close close-2"></i>
+                    <div class="cercle">
+                      <div class="cercle2">
+                        <!-- <i class="fa-solid fa-check"></i> -->
+                      </div>
+                    </div>
+                    <img src="../styles/images/boy.png" alt="boys">
+                    <p>Bienvenue</p>
+                    <div class="sign-in-out">
+                        <h1 id="connexion"><a href="login.html">Connexion</a></h1>
+                        <h1 id="enregistrer"><a href="signup.html">S´enregistrer<a></h1>
+                    </div>
+                    
+                </div>
+                 
+            </div>
+            
+
+
+        </div>
+     
+
+    <script src="../script.js"></script>
+</body>
+</html>

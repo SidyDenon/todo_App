@@ -1,0 +1,5 @@
+# Fichiers d'environnement
+.env
+
+# Node modules (backend et éventuellement frontend si tu as un build React/Vite)
+node_modules/
