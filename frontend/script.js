@@ -259,11 +259,12 @@ function closeBoxTache() {
 // Ajoute une tâche
 async function addTask() {
   const description = tachesInput.value.trim();
+  const category = categoriesSelect.value || selectCategory.title;
   if (!description) return alert("La description est obligatoire.");
   try {
     await apiFetch("/tasks", {
       method: "POST",
-      body: JSON.stringify({ description, category: selectCategory.title }),
+      body: JSON.stringify({ description, category }),
     });
     await loadTasks();
     closeBoxTache();
@@ -271,6 +272,7 @@ async function addTask() {
     alert("Erreur ajout tâche : " + e.message);
   }
 }
+
 
 // Modifie une tâche existante
 async function editTask() {

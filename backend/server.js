@@ -47,7 +47,7 @@ const authenticateToken = (req, res, next) => {
 
 // Routes API
 
-// Signup
+// Signup ****************************************************************************************
 app.post("/signup", async (req, res) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password)
@@ -72,7 +72,7 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-// Login
+// Login ************************************************************************************
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password)
