@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:4000";
+const API_BASE = "http://localhost:4001";
 
 // Sélecteurs
 const usernameSpan = document.querySelector(".Username");
@@ -23,6 +23,7 @@ const filtre2 = document.querySelector(".nav-filter");
 const ecran2 = document.querySelector(".category-detail-ecran");
 const retour = document.querySelector(".fa-arrow-left-long");
 const themeBox = document.querySelector(".themes"); 
+const adminBtn = document.getElementById("admin-btn");
 
 // Nouveaux éléments ajoutés à ton HTML, à vérifier dans le DOM :
 const categoriesContainer = document.querySelector(".categories");
@@ -78,17 +79,84 @@ async function checkAuth() {
     return;
   }
 
-  try {
-    const user = await apiFetch("/user");
-    usernameSpan.textContent = user.username;
-    usernameSpan2.textContent = user.username;
-    setTheme(user.theme);
+ try {
+    // on récupère maintenant id, username, avatar, theme, role
+    const { id, username, avatar, theme, role } = await apiFetch('/user');
+    window.currentUserId = id;
+    // met à jour nom & avatar
+    usernameSpan.textContent = username;
+    usernameSpan2.textContent = username;
+    // applique l’avatar
+   // cible à la fois #user-avatar et #sidebar-avatar
+const ua1 = document.getElementById('user-avatar');
+const ua2 = document.getElementById('sidebar-avatar');
+if (ua1) ua1.src = avatar;
+if (ua2) ua2.src = avatar;
+
+    setTheme(theme);
+    if (role === "admin") adminBtn.style.display = 'inline-block';
     fillCategories();
     await loadTasks();
   } catch (err) {
     logout();
   }
 }
+
+
+// — Références —
+const btnModifyProfile = document.getElementById('modifier');
+const formProfile      = document.getElementById('user-profile-form');
+const inpUsername      = document.getElementById('user-profile-username');
+const inpAvatar        = document.getElementById('user-profile-avatar');
+
+// Ouvre/ferme le form
+btnModifyProfile.addEventListener('click', e => {
+  e.preventDefault();
+  formProfile.classList.toggle('hidden');
+  inpUsername.value = usernameSpan.textContent;
+});
+document.getElementById('user-profile-cancel').addEventListener('click', e => {
+  e.preventDefault();
+  formProfile.classList.add('hidden');
+});
+
+// Soumission du form
+document.getElementById('user-profile-submit').addEventListener('click', async e => {
+  e.preventDefault();
+  const newName = inpUsername.value.trim();
+  let avatarData = null;
+  if (inpAvatar.files.length > 0) {
+    avatarData = await new Promise(r => {
+      const reader = new FileReader();
+      reader.onload = ()=>r(reader.result);
+      reader.readAsDataURL(inpAvatar.files[0]);
+    });
+  }
+  try {
+    const updated = await apiFetch('/user/profile', {
+      method: 'PUT',
+      body: JSON.stringify({
+        username: newName,
+        avatar:   avatarData
+      })
+    });
+    // mise à jour UI
+    usernameSpan.textContent = updated.username;
+    usernameSpan2.textContent= updated.username;
+    const ua = document.getElementById('user-avatar');
+    if (ua) ua.src = updated.avatar;
+    // prévenir les autres onglets/admin
+    socket.emit('profileUpdated', {
+      userId: window.currentUserId,
+      username: updated.username,
+      avatar: updated.avatar
+    });
+    formProfile.classList.add('hidden');
+  } catch(err) {
+    alert("Erreur mise à jour profil : " + (err.message||err));
+  }
+});
+
 
 // Calcul total tâches selon catégorie sélectionnée et total global
 function calculTotal() {
@@ -227,6 +295,27 @@ async function loadTasks() {
   calculTotal();
   renderTasks();
 }
+
+// connexion au serveur
+const socket = io(API_BASE);
+
+// quand une tâche est ajoutée/modifiée/supprimée, on recharge
+socket.on('taskAdded',   () => loadTasks());
+socket.on('taskUpdated', () => loadTasks());
+socket.on('taskDeleted', () => loadTasks());
+socket.on("profileUpdated", data => {
+  if (data.userId === window.currentUserId) {
+    // Admin sidebar
+    document.getElementById("sidebar-username").textContent = data.username;
+    document.getElementById("sidebar-avatar").src = data.avatar;
+    // User interface (si avatar & nom dupliqués)
+    const ua = document.getElementById('user-avatar');
+    if (ua) ua.src = data.avatar;
+    document.querySelectorAll('.Username, .Username2')
+      .forEach(el => el.textContent = data.username);
+  }
+});
+
 
 // Escape texte HTML pour éviter injection
 function escapeHtml(text) {
@@ -431,7 +520,7 @@ function startNotifications() {
 
 function updateButtonText() {
   const enabled = localStorage.getItem("notificationsEnabled") === "true";
-  toggleBtn.textContent = enabled ? "Désactiver notifications" : "Activer notifications";
+  toggleBtn.textContent = enabled ? "🔔" : "🔕";
 }
 
 toggleBtn.addEventListener("click", () => {

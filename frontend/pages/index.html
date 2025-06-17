@@ -8,11 +8,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&display=swap" rel="stylesheet">
-    <title>TO-DO APP</title>
+    <link
+  href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"
+  rel="stylesheet"
+/>
+<script
+  src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"
+></script>
+
+<title>TO-DO APP</title>
 </head>
 <body class="main">
   <div class="iphone">
-            <div class="clos-notif"><button id="notification-toggle">Activer notifications</button>
+            <div class="clos-notif"><button id="notification-toggle">🔔</button>
                     <div id="toast"></div></div>
             <div class="themes">
                 <i class="fa-solid fa-sun " id="toggleSunBtn"></i>
@@ -28,8 +36,9 @@
                         <p>Aujourd’hui vous avez <span class="tacheTotal"></span> tâches</p>
                        </div> 
                        <div class="image">
-                        <div class="cercle-blanc"></div>
-                        <img src="../styles/images/boy.png" alt="boy" srcset="">
+                        <div class="cercle-blanc">
+                        <img id="user-avatar" src="../styles/images/boy.png" alt="boy" srcset="">
+                        </div>
                        </div>
                     </div>
                 </div>
@@ -106,42 +115,47 @@
             <div class="nav-page active">
                 <div class="top">
                     <i class="fa-solid fa-plus close"></i>
-                    <div class="cercle"></div>
-                    <img src="../styles/images/boy.png" alt="boys">
-                    <h1>Mr<br><span class="Username2"></span></h1>
-                    <div class="modifier">
+                    <div class="cercle">
+                    <img id="sidebar-avatar" src="../styles/images/boy.png" alt="Avatar utilisateur">                   
+                </div>
+                <h1 style="font-size: 1.4rem;"><span class="Username2"></span></h1>
+                    <div class="modifier" id="modifier">
                         <i class="fa-solid fa-pen-to-square"></i>
                     </div>
+                    <div id="user-profile-form" class="hidden" style="padding:1rem; background:var(--color-box-bg); border-radius:6px; box-shadow:0 2px 6px var(--color-shadow); margin-top:1rem;">
+                    <label>Nom d’utilisateur<br>
+                        <input type="text" id="user-profile-username" style="width:100%; padding:.5rem; margin-bottom:.5rem;">
+                    </label><br>
+                    <label>Avatar<br>
+                        <input type="file" id="user-profile-avatar" accept="image/*">
+                    </label><br><br>
+                    <button id="user-profile-submit">Enregistrer</button>
+                    <button id="user-profile-cancel">Annuler</button>
+                    </div>
+                    <!-- ex. dans le <header> -->
+                    <div id="user-info">
+                    <span id="username"></span>
+                    <!-- placeholder pour le bouton admin -->
+                   
+                    </div>
+
                 </div>
                 <div class="bottom">
-                    <h1 class="decon"><a href="#" id="logout-btn">Déconnexion</a></h1>
+                     <a id="admin-btn" href="admin.html" style="display:none; text-decoration: none; color: #2e2e2e; background-color: aqua; padding: 5px; border-radius: 10px; bottom: 70px; font-size: 1.1rem; right: 30%; font-weight: bold;cursor: pointer; text-align: center;  &:hover {
+        opacity: .8;
+    }">
+                        Dashboard Admin
+                    </a>
+                    <h1 class="decon" ><a href="#" id="logout-btn" style="text-decoration: none; color: #2e2e2e; font-size: 1rem; margin:5px;  top: -10px; padding: 10px;">Déconnexion</a></h1>
                 </div>
-            </div>
-            
-            <div class="nav-page-out active">
-                <div class="top">
-                    <i class="fa-solid fa-plus close close-2"></i>
-                    <div class="cercle">
-                      <div class="cercle2">
-                        <!-- <i class="fa-solid fa-check"></i> -->
-                      </div>
-                    </div>
-                    <img src="../styles/images/boy.png" alt="boys">
-                    <p>Bienvenue</p>
-                    <div class="sign-in-out">
-                        <h1 id="connexion"><a href="login.html">Connexion</a></h1>
-                        <h1 id="enregistrer"><a href="signup.html">S´enregistrer<a></h1>
-                    </div>
-                    
-                </div>
-                 
             </div>
             
 
 
         </div>
      
+<script src="https://cdn.jsdelivr.net/npm/socket.io-client@4/dist/socket.io.min.js"></script>
 
-    <script src="../script.js"></script>
+<script src="../script.js"></script>
 </body>
 </html>

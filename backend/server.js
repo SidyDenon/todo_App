@@ -5,9 +5,24 @@ const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
+const nodemailer = require("nodemailer");
 require("dotenv").config();
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
+
+
+const server = http.createServer(app);
+const io     = new Server(server, {
+  cors: { origin: '*' }
+});
+
+// À chaque nouvelle connexion
+io.on('connection', socket => {
+  console.log('Client connecté', socket.id);
+});
+
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -46,6 +61,210 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Routes API
+// Autorisation Admin
+function authorizeAdmin(req, res, next) {
+  if (req.user.role !== 'admin') return res.sendStatus(403);
+  next();
+}
+
+// Routes Admin à coller en bas du fichier, avant le fallback SPA
+app.get(
+  '/admin/users',
+  authenticateToken, authorizeAdmin,
+  async (req, res) => {
+    const [users] = await pool.execute(`
+      SELECT 
+        u.id,
+        u.username,
+        u.email,
+        u.theme,
+        u.role,
+        COUNT(t.id) AS tasks_count
+      FROM users u
+      LEFT JOIN tasks t
+        ON t.user_id = u.id
+      GROUP BY u.id
+      ORDER BY (u.role = 'admin') DESC, u.username
+    `);
+    res.json(users);
+  }
+);
+
+app.delete(
+  '/admin/users/:id',
+  authenticateToken, authorizeAdmin,
+  async (req, res) => {
+    await pool.execute('DELETE FROM users WHERE id = ?', [req.params.id]);
+    res.sendStatus(204);
+  }
+);
+
+app.get(
+  '/admin/stats',
+  authenticateToken, authorizeAdmin,
+  async (req, res) => {
+    const [[{ count: total_users }]] =
+      await pool.query('SELECT COUNT(*) AS count FROM users');
+    const [[{ count: total_tasks }]] =
+      await pool.query('SELECT COUNT(*) AS count FROM tasks');
+    res.json({ total_users, total_tasks });
+  }
+);
+// Renvoie pour chaque catégorie le nombre de tâches
+app.get(
+  '/admin/categories-stats',
+  authenticateToken, authorizeAdmin,
+  async (req, res) => {
+    const [rows] = await pool.execute(
+      'SELECT category, COUNT(*) AS count FROM tasks GROUP BY category'
+    );
+    res.json(rows); // [{ category: 'Personnel', count: 5 }, …]
+  }
+);
+
+// Mise à jour profil
+// 1) GET /user — inclut maintenant email et avatar_url
+app.get("/user", authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      "SELECT id, username, email, avatar AS avatar, theme, role FROM users WHERE id = ?",
+      [req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
+
+// 2) PUT /user/profile — ne modifie que username + avatar_url
+app.put("/user/profile", authenticateToken, async (req, res) => {
+  const { username, avatar } = req.body;
+  try {
+    await pool.execute(
+      "UPDATE users SET username = ?, avatar = ? WHERE id = ?",
+      [username, avatar || null, req.user.id]
+    );
+
+    // renvoie le profil mis à jour
+    res.json({ username, avatar });
+
+    // **AJOUT**
+    io.emit("profileUpdated", {
+      userId:   req.user.id,
+      username: username,
+      avatar:   avatar
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
+
+
+// Changer de mot de passe
+app.put("/user/password", authenticateToken, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const [[u]] = await pool.execute("SELECT password FROM users WHERE id=?", [req.user.id]);
+  if (!await bcrypt.compare(currentPassword, u.password))
+    return res.status(400).json({ message:"Mot de passe actuel incorrect" });
+  const hash = await bcrypt.hash(newPassword, 10);
+  await pool.execute("UPDATE users SET password=? WHERE id=?", [hash, req.user.id]);
+  res.json({ message:"Mot de passe changé" });
+});
+
+// Notifications
+app.get("/user/notifications", authenticateToken, async (req, res) => {
+  const [[cfg]] = await pool.execute(
+    "SELECT notif_email AS email, notif_push AS push FROM users WHERE id=?", [req.user.id]
+  );
+  res.json(cfg);
+});
+app.put("/user/notifications", authenticateToken, async (req, res) => {
+  const { email, push } = req.body;
+  await pool.execute(
+    "UPDATE users SET notif_email=?, notif_push=? WHERE id=?",
+    [email?1:0, push?1:0, req.user.id]
+  );
+  res.json({ message:"Notifications mises à jour" });
+});
+
+// Déconnexion globale
+app.post("/user/logout-all", authenticateToken, async (req, res) => {
+  // Implémente la révocation de tous les tokens de cet utilisateur…
+  res.json({ message:"Tous les appareils déconnectés" });
+});
+
+// Suppression de compte
+app.delete("/user/delete", authenticateToken, async (req, res) => {
+  await pool.execute("DELETE FROM users WHERE id=?", [req.user.id]);
+  res.json({ message:"Compte supprimé" });
+});
+
+// Route pour la demande de réinitialisation de mot de passe
+app.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    // Vérifier si l'email existe dans la base de données
+    const [users] = await pool.execute("SELECT id, username FROM users WHERE email = ?", [email]);
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "Email non trouvé" });
+    }
+
+    const user = users[0];
+
+    // Générer un token pour réinitialiser le mot de passe
+    const resetToken = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: "1h" });
+
+    // Lien de réinitialisation du mot de passe
+    const resetLink = `http://localhost:4000/reset-password?token=${resetToken}`;
+
+    // Configuration du transporteur d'email (Nodemailer)
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'tonemail@gmail.com',
+        pass: 'tonmotdepasse'
+      }
+    });
+
+    // Options de l'email
+    const mailOptions = {
+      from: 'tonemail@gmail.com',
+      to: email,
+      subject: 'Réinitialisation du mot de passe',
+      text: `Cliquez sur ce lien pour réinitialiser votre mot de passe : ${resetLink}`
+    };
+
+    // Envoi de l'email
+    await transporter.sendMail(mailOptions);
+
+    res.json({ message: "Un lien de réinitialisation a été envoyé à votre email." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+// Route pour réinitialiser le mot de passe (exemple)
+app.get("/reset-password", (req, res) => {
+  const { token } = req.query;
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    // Ici, tu peux afficher un formulaire pour réinitialiser le mot de passe
+    res.send('Page de réinitialisation du mot de passe');
+  } catch (err) {
+    res.status(400).json({ message: "Token invalide ou expiré" });
+  }
+});
 
 // Signup ****************************************************************************************
 app.post("/signup", async (req, res) => {
@@ -61,8 +280,8 @@ app.post("/signup", async (req, res) => {
 
     const hash = await bcrypt.hash(password, 10);
     await pool.execute(
-      "INSERT INTO users (username, email, password, theme) VALUES (?, ?, ?, ?)",
-      [username, email, hash, "light"]
+      "INSERT INTO users (username, email, password, theme, role) VALUES (?, ?, ?, ?, ?)",
+      [username, email, hash, "light","user"]
     );
 
     res.status(201).json({ message: "Inscription réussie" });
@@ -79,8 +298,7 @@ app.post("/login", async (req, res) => {
     return res.status(400).json({ message: "Username et password requis" });
 
   try {
-    const [rows] = await pool.execute("SELECT * FROM users WHERE username = ?", [username]);
-
+  const [rows] = await pool.execute("SELECT id,username,password,role FROM users WHERE username = ?", [username]) ;
     if (rows.length === 0)
       return res.status(400).json({ message: "Utilisateur non trouvé" });
 
@@ -88,9 +306,12 @@ app.post("/login", async (req, res) => {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(400).json({ message: "Mot de passe incorrect" });
 
-    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, {
-      expiresIn: "8h",
-    });
+    const token = jwt.sign(
+  { id: user.id, username: user.username, role: user.role },
+  JWT_SECRET,
+  { expiresIn: "8h" }
+);
+
 
     res.json({ token });
   } catch (err) {
@@ -99,12 +320,39 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// Créer un nouvel utilisateur (accessible aux admins)
+app.post(
+  '/admin/users',
+  authenticateToken, authorizeAdmin,
+  async (req, res) => {
+    const { username, email, password, role } = req.body;
+    if (!username || !email || !password || !['admin','utilisateur'].includes(role)) {
+      return res.status(400).json({ message: "Champs invalides" });
+    }
+    try {
+      const hash = await bcrypt.hash(password, 10);
+      await pool.execute(
+        `INSERT INTO users (username, email, password, theme, role)
+         VALUES (?, ?, ?, 'light', ?)`,
+        [username, email, hash, role]
+      );
+      res.status(201).json({ message: "Utilisateur créé" });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Erreur serveur" });
+    }
+  }
+);
+
+
 // Récupérer données utilisateur (nom, thème)
 app.get("/user", authenticateToken, async (req, res) => {
   try {
-    const [rows] = await pool.execute("SELECT username, theme FROM users WHERE id = ?", [req.user.id]);
-    if (rows.length === 0) return res.status(404).json({ message: "Utilisateur non trouvé" });
-
+    const [rows] = await pool.execute(
+      "SELECT username, email, avatar_url AS avatar, theme, role FROM users WHERE id = ?",
+      [req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ message: "Utilisateur non trouvé" });
     res.json(rows[0]);
   } catch (err) {
     console.error(err);
@@ -153,6 +401,7 @@ app.post("/tasks", authenticateToken, async (req, res) => {
       [req.user.id, description, category]
     );
     res.status(201).json({ message: "Tâche ajoutée" });
+    io.emit('taskAdded'); 
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Erreur serveur" });
@@ -191,6 +440,7 @@ app.put("/tasks/:id", authenticateToken, async (req, res) => {
       [description, category, done ? 1 : 0, id]
     );
     res.json({ message: "Tâche modifiée" });
+     io.emit('taskUpdated', req.params.id);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Erreur serveur" });
@@ -210,6 +460,7 @@ app.delete("/tasks/:id", authenticateToken, async (req, res) => {
 
     await pool.execute("DELETE FROM tasks WHERE id = ?", [id]);
     res.json({ message: "Tâche supprimée" });
+     io.emit('taskDeleted', req.params.id);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Erreur serveur" });
@@ -239,6 +490,6 @@ pool.getConnection()
 
 
 // Démarrer le serveur
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Serveur démarré sur http://localhost:${PORT}`);
 });

@@ -134,26 +134,30 @@
 
 .iphone-top .welcome .image {
     position: relative;
+    height: 130px;
+    width: 30%;
     top: -40px;
-    left: 8px;
+    overflow: hidden;
 }
 
 .iphone-top .welcome .image .cercle-blanc {
-    top: 41px;
-    left: 28px;
-    width: 4rem;
-    height: 4rem;
+    position: absolute;
+    top: 20px;
+    left: 70px;
+    width:80px;
+    height:80px;
     display: block;
-    position: relative;
     border-radius: 50%;
+    overflow:hidden;
     background-color: var(--color-background);
+       
 }
 
-.iphone-top .welcome .image img {
-    top: -45px;
-    left: -5px;
-    position: relative;
-    transform: scale(.6);
+.iphone-top .welcome .image #user-avatar {
+    /* top: -100px; */
+    position: absolute;
+    width: 100%;
+    height: 100%;
 }
 
 .categories-box {
@@ -534,11 +538,6 @@
     width: 100%;
     visibility: hidden;
     /* z-index: 10; */
-
-}
-.nav-page-out.active {
-    transform: translateX(-200%);
-    
 }
 
 .nav-page {
@@ -551,108 +550,75 @@
     background: var(--color-background);
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    align-items: center;
     transition: all .3s ease;
     z-index: 2;
+    gap: 10px;
+    padding-top: 30px;
 
 }
 
-.nav-page-out {
-    top: 0;
-    /* right: 30%; */
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    background: var(--color-background);
+ .nav-page .top {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    transition: all .3s ease;
-    z-index: 2;
-
-}
-
-.nav-page .top,.nav-page-out .top {
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    text-align: center;
-    height: 10rem;
-    margin-top: 40px;
-
-}
+    align-items: center;
+    gap: 10px;
+ }
 
 .nav-page .top img{
-    width: 5rem;
+    width: 100%;
    position: relative;
    transform: translateX(-50%);
    left: 50%;
+   top: -10px;
 }
 
 .nav-page .top .cercle {
-    width: 4rem;
-    height: 4rem;
+    width: 80px;
+    height: 80px;
+    overflow: hidden;
     background: var(--color-primary);
-    position: absolute;
+    position: relative;
     transform: translateX(-50%);
     left: 50%;
     border-radius: 50%;
 }
 
-.nav-page-out .top .cercle {
-    width: 20rem;
-    height: 20rem;
-    background: var(--color-primary);
-    position: absolute;
-    transform: translateX(-50%);
-    left: 50%;
-    border-radius: 50%;
-}
-
-
-
-.nav-page-out .top img {
-    width: 15rem;
-   position: relative;
-   transform: translateX(-50%);
-   left: 50%;
-   top: 100px;
-   /* z-index: -1; */
-   
-}
 
 
 .modifier i {
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 2rem;
+    height: 2rem;
    text-align: center;
    border-radius: 50%;
    background-color: var(--color-primary);
    cursor: pointer;
-   padding-top: 2px;
+   padding-top: 7px;
 }
 
 .nav-page .bottom {
-    text-align: center;
-    margin-bottom: 30px;
-   
-
+    position: absolute;
+    bottom: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
 }
 
-.nav-page .bottom h1 {
-    font-size: 1.5rem;
-    position: absolute;
-    transform: translateX(-50%);
-    left: 50%;
-    bottom: 30px;
-    padding: .8rem 1rem;
+.nav-page .bottom h1 a {
+    bottom: 10px;
     background: var(--color-primary);
     border-radius: .8rem;
     cursor: pointer;
+    height: 30px;
+    text-decoration: none; 
+    color: #2e2e2e; 
+    font-size: 1rem; 
+    margin:5px;  
+    top: -10px; 
+    padding: 10px;
 
     &:hover {
-        font-size: 1.4rem;
         opacity: .8;
     }
 }
@@ -662,40 +628,11 @@
     right: .9rem;
     font-size: 2rem;
     transform: rotate(45deg);
-    top: -20px;
+    top: -3px;
     cursor: pointer;
     color: var( --color-close-btn);
 
 }
-
-.nav-page-out .sign-in-out {
-    margin-top: 100px;
-    text-align: center;
-    display: flex;
-    align-items: center;    
-    flex-direction: column;
-
-}
-
-.nav-page-out .sign-in-out h1 {
-    font-size: 1.5rem;
-    margin-top: 40px;
-    width: 200px;
-    background: var(--color-primary);
-    border-radius:.8rem;
-    cursor: pointer;
-
-    &:hover {
-        font-size: 1.4rem;
-        opacity: .8;
-    }
-}
-
-.nav-page-out p {
-    font-size: 1.5rem;
-    font-weight: 700;
-}
-
  
  
 @media (min-width:481px) {
@@ -743,7 +680,10 @@
         font-size: 1.5rem;
         /* opacity:; */
       }
-
+.iphone .welcome .image .cercle-blanc {
+    position: relative;
+    left: 10px;
+}
      
     .iphone.show-detail .ecran-1{
         transform: translateX(-100%);
@@ -804,6 +744,12 @@
     
     }
 
+    .nav-page .bottom {
+        position: absolute;
+        bottom: 250px;
+        /* left: 50%; */
+    }
+
     .task-wrapper label {
         display: flex;
         gap: 0;
@@ -850,7 +796,7 @@
         width: 3.5rem;
         height: 3.5rem;
         right: .9rem;
-        bottom: 2rem;   
+        bottom: 15rem;   
 
         & .fa-plus  {
             font-size: 3rem;
@@ -858,7 +804,7 @@
         }
 
         &.active {
-            bottom: 15rem;
+            top: 35%;
         }
     }
 
@@ -867,6 +813,10 @@
         height: 50%;
         padding-top: 30px;
         border-radius: 50% 50% 0 0;
+
+        &.active {
+            top: 40%;
+        }
     }
     .box-tache-form {
         width: 70%;
@@ -1022,6 +972,8 @@
 
 .clos-notif {
     position: absolute;
+    right: 70px;
+    top: 30px;
 }
 
 #toast {
@@ -1040,5 +992,31 @@
 #toast.show {
   opacity: 1;
   pointer-events: auto;
+}
+
+.admin-link {
+  font-size: 1.2em;
+  margin-bottom: 70px;
+  color: #007bff;
+}
+
+.admin-link a {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.admin-link a:hover {
+  text-decoration: underline;
+}
+
+.hidden { display: none; }
+.modify-profile {
+  margin-top: 1rem;
+  padding: .5rem 1rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
 }
 
