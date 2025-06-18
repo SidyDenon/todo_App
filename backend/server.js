@@ -23,7 +23,7 @@ io.on('connection', socket => {
   console.log('Client connecté', socket.id);
 });
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 4001;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Config BDD MySQL (à adapter)
@@ -224,7 +224,7 @@ app.post("/forgot-password", async (req, res) => {
     const resetToken = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: "1h" });
 
     // Lien de réinitialisation du mot de passe
-    const resetLink = `http://localhost:4000/reset-password?token=${resetToken}`;
+    const resetLink = `http://localhost:4001/reset-password?token=${resetToken}`;
 
     // Configuration du transporteur d'email (Nodemailer)
     const transporter = nodemailer.createTransport({
@@ -319,6 +319,50 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
+
+//route pour emvoyer un email au users
+
+async function verifierEtEnvoyerLien() {
+  const email = document.getElementById("email").value.trim();
+
+  if (!email || !email.includes("@")) {
+    alert("Veuillez entrer une adresse email valide.");
+    return;
+  }
+
+  try {
+    const res = await fetch("http://localhost:4001/verifier-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.message || "Erreur serveur");
+
+    const lien = `http://localhost:4001/reset-password?token=${data.token}`;
+
+    const body = `
+      Bonjour ${data.username},<br><br>
+      Cliquez ici pour réinitialiser votre mot de passe :<br>
+      <a href="${lien}">${lien}</a><br><br>
+      Si vous n'avez pas fait cette demande, ignorez ce message.
+    `;
+
+    Email.send({
+      SecureToken: "f24e5b69-749a-4b29-b569-6f37f553687e",
+      To: email,
+      From: "todo.app.services.mali@gmail.com",
+      Subject: "Lien de réinitialisation du mot de passe",
+      Body: body
+    }).then(msg => alert("Email envoyé avec succès !"));
+
+  } catch (err) {
+    alert("Erreur : " + err.message);
+  }
+}
+
 
 // Créer un nouvel utilisateur (accessible aux admins)
 app.post(
@@ -466,6 +510,27 @@ app.delete("/tasks/:id", authenticateToken, async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
+
+app.post("/verifier-email", async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const [users] = await pool.execute("SELECT username FROM users WHERE email = ?", [email]);
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "Email non trouvé" });
+    }
+
+    const user = users[0];
+    const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: "1h" });
+
+    res.json({ token, username: user.username });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
 
 // Fallback: renvoyer index.html pour toutes les autres routes (SPA)
 const indexPath = path.join(__dirname, "../frontend/pages/index.html");
