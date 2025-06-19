@@ -4,14 +4,43 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="../styles/style.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&display=swap" rel="stylesheet" />
   <title>Inscription</title>
+  <style>
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background-color: #333;
+      color: #fff;
+      padding: 15px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      transform: translateY(30px);
+      z-index: 9999;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    input.invalid {
+      border: 1px solid red;
+      animation: shake 0.3s;
+    }
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-5px); }
+      100% { transform: translateX(0); }
+    }
+  </style>
 </head>
 <body class="main">
   <div class="iphone">
-    <form class="form" id="signupForm">
+    <form class="form" id="signupForm"> 
       <h3 id="messageBv">Heureux de vous compter parmi nous</h3>
       <p class="form-title">S’enregistrer</p>
       <div class="input-container">
@@ -25,21 +54,66 @@
       </div>
       <button type="submit" class="submit">S’inscrire</button>
       <p class="signup-link">
-        Vous avez déjà un compte ?
-        <a href="login.html">Se connecter</a>
+        Vous avez déjà un compte ? <a href="login.html">Se connecter</a>
       </p>
     </form>
   </div>
 
-  <script>
-    const apiUrl = "http://localhost:4000";
+  <div class="toast" id="toast"></div>
 
+  <script>
+    const apiUrl = "http://localhost:4001";
     const form = document.getElementById("signupForm");
+    const toast = document.getElementById("toast");
+
+    const usernameInput = document.getElementById("username");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+
+    function showToast(message, isError = false) {
+      toast.textContent = message;
+      toast.style.backgroundColor = isError ? "#e74c3c" : "#2ecc71";
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 4000);
+    }
+
+    function validateEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const username = form.username.value.trim();
-      const email = form.email.value.trim();
-      const password = form.password.value.trim();
+      const username = usernameInput.value.trim();
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      let valid = true;
+
+      if (username.length < 2) {
+        usernameInput.classList.add("invalid");
+        showToast("❌ Le nom doit contenir au moins 2 caractères", true);
+        valid = false;
+      } else {
+        usernameInput.classList.remove("invalid");
+      }
+
+      if (!validateEmail(email)) {
+        emailInput.classList.add("invalid");
+        showToast("❌ Adresse email invalide", true);
+        valid = false;
+      } else {
+        emailInput.classList.remove("invalid");
+      }
+
+      if (!/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\W_]).{6,}$/.test(password)) {
+        passwordInput.classList.add("invalid");
+        showToast("❌ Le mot de passe doit contenir au moins 6 caractères, un chiffre et un symbole", true);
+        valid = false;
+      } else {
+        passwordInput.classList.remove("invalid");
+      }
+
+      if (!valid) return;
 
       try {
         const res = await fetch(apiUrl + "/signup", {
@@ -48,15 +122,15 @@
           body: JSON.stringify({ username, email, password }),
         });
 
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.message || "Erreur inscription");
-        }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Erreur inscription");
 
-        alert("Inscription réussie, connectez-vous !");
-        window.location.href = "login.html";
+        showToast("✅ Inscription réussie !");
+        setTimeout(() => {
+          window.location.href = "login.html";
+        }, 1500);
       } catch (err) {
-        alert("Erreur : " + err.message);
+        showToast("❌ " + err.message, true);
       }
     });
   </script>

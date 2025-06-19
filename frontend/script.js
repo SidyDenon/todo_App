@@ -90,8 +90,10 @@ async function checkAuth() {
    // cible à la fois #user-avatar et #sidebar-avatar
 const ua1 = document.getElementById('user-avatar');
 const ua2 = document.getElementById('sidebar-avatar');
-if (ua1) ua1.src = avatar;
-if (ua2) ua2.src = avatar;
+ 
+const avatarUrl = avatar || "../styles/images/boy.png";
+if (ua1) ua1.src = avatarUrl;
+if (ua2) ua2.src = avatarUrl;
 
     setTheme(theme);
     if (role === "admin") adminBtn.style.display = 'inline-block';
@@ -124,7 +126,7 @@ document.getElementById('user-profile-cancel').addEventListener('click', e => {
 document.getElementById('user-profile-submit').addEventListener('click', async e => {
   e.preventDefault();
   const newName = inpUsername.value.trim();
-  let avatarData = null;
+  let avatarData = "../styles/images/boy.png";
   if (inpAvatar.files.length > 0) {
     avatarData = await new Promise(r => {
       const reader = new FileReader();

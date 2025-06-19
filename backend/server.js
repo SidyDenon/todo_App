@@ -73,19 +73,19 @@ app.get(
   authenticateToken, authorizeAdmin,
   async (req, res) => {
     const [users] = await pool.execute(`
-      SELECT 
-        u.id,
-        u.username,
-        u.email,
-        u.theme,
-        u.role,
-        COUNT(t.id) AS tasks_count
-      FROM users u
-      LEFT JOIN tasks t
-        ON t.user_id = u.id
-      GROUP BY u.id
-      ORDER BY (u.role = 'admin') DESC, u.username
-    `);
+  SELECT 
+    u.id,
+    u.username,
+    u.email,
+    u.avatar,
+    u.theme,
+    u.role,
+    COUNT(t.id) AS tasks_count
+  FROM users u
+  LEFT JOIN tasks t ON t.user_id = u.id
+  GROUP BY u.id
+  ORDER BY (u.role = 'admin') DESC, u.username
+`);
     res.json(users);
   }
 );
@@ -165,6 +165,19 @@ app.put("/user/profile", authenticateToken, async (req, res) => {
 });
 
 
+app.post("/reset-password", async (req, res) => {
+  const { newPassword, resetToken } = req.body;
+
+  try {
+    const decoded = jwt.verify(resetToken, JWT_SECRET);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await pool.execute("UPDATE users SET password = ? WHERE email = ?", [hashedPassword, decoded.email]);
+    res.json({ message: "Mot de passe réinitialisé avec succès" });
+  } catch (err) {
+    res.status(400).json({ message: "Token invalide ou expiré" });
+  }
+});
+
 
 
 // Changer de mot de passe
@@ -211,77 +224,95 @@ app.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
 
   try {
-    // Vérifier si l'email existe dans la base de données
-    const [users] = await pool.execute("SELECT id, username FROM users WHERE email = ?", [email]);
+    const [users] = await pool.execute(
+      "SELECT id, username FROM users WHERE email = ?", [email]
+    );
 
     if (users.length === 0) {
       return res.status(404).json({ message: "Email non trouvé" });
     }
 
     const user = users[0];
+    const resetToken = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
-    // Générer un token pour réinitialiser le mot de passe
-    const resetToken = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: "1h" });
-
-    // Lien de réinitialisation du mot de passe
     const resetLink = `http://localhost:4001/reset-password?token=${resetToken}`;
 
-    // Configuration du transporteur d'email (Nodemailer)
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      service: "gmail",
       auth: {
-        user: 'tonemail@gmail.com',
-        pass: 'tonmotdepasse'
+        user: process.env.EMAIL,
+        pass: process.env.EMAIL_PASSWORD
       }
     });
 
-    // Options de l'email
     const mailOptions = {
-      from: 'tonemail@gmail.com',
+      from: `"MyTodo App" <${process.env.EMAIL}>`,
       to: email,
-      subject: 'Réinitialisation du mot de passe',
-      text: `Cliquez sur ce lien pour réinitialiser votre mot de passe : ${resetLink}`
+      subject: "Réinitialisation de votre mot de passe",
+      html: `
+        <h3>Bonjour ${user.username},</h3>
+        <p>Vous avez demandé à réinitialiser votre mot de passe.</p>
+        <p><a href="${resetLink}">Cliquez ici pour le réinitialiser</a></p>
+        <p><i>Ce lien est valide pendant 1 heure.</i></p>
+      `
     };
 
-    // Envoi de l'email
     await transporter.sendMail(mailOptions);
+    res.json({ message: "Lien envoyé à votre adresse email." });
 
-    res.json({ message: "Un lien de réinitialisation a été envoyé à votre email." });
   } catch (err) {
-    console.error(err);
+    console.error("Erreur envoi mail:", err);
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
 
+
 // Route pour réinitialiser le mot de passe (exemple)
+
 app.get("/reset-password", (req, res) => {
   const { token } = req.query;
-  
+
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    // Ici, tu peux afficher un formulaire pour réinitialiser le mot de passe
-    res.send('Page de réinitialisation du mot de passe');
+    jwt.verify(token, JWT_SECRET);
+
+    // Envoie le fichier HTML réel
+    res.sendFile(path.join(__dirname, "../frontend/pages/reset-password.html"));
   } catch (err) {
-    res.status(400).json({ message: "Token invalide ou expiré" });
+    res.status(400).send("Token invalide ou expiré.");
   }
 });
+
 
 // Signup ****************************************************************************************
 app.post("/signup", async (req, res) => {
   const { username, email, password } = req.body;
-  if (!username || !email || !password)
-    return res.status(400).json({ message: "Tous les champs sont requis" });
+
+  // Vérification minimale côté serveur
+  if (
+    !username || username.trim().length < 2 ||
+    !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+    !password || !/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\W_]).{6,}$/.test(password)
+  ) {
+    return res.status(400).json({
+      message: "Champs invalides. Vérifiez nom, email ou mot de passe."
+    });
+  }
 
   try {
-    const [existingEmail] = await pool.execute("SELECT id FROM users WHERE email = ?", [email]);
+    // Vérifie uniquement l'existence de l'email
+    const [existingEmail] = await pool.execute(
+      "SELECT id FROM users WHERE email = ?",
+      [email]
+    );
     if (existingEmail.length > 0) {
       return res.status(400).json({ message: "Email déjà existant" });
     }
 
     const hash = await bcrypt.hash(password, 10);
     await pool.execute(
-      "INSERT INTO users (username, email, password, theme, role) VALUES (?, ?, ?, ?, ?)",
-      [username, email, hash, "light","user"]
+      `INSERT INTO users (username, email, password, theme, role)
+       VALUES (?, ?, ?, ?, ?)`,
+      [username.trim(), email.trim(), hash, "light", "user"]
     );
 
     res.status(201).json({ message: "Inscription réussie" });
@@ -291,27 +322,32 @@ app.post("/signup", async (req, res) => {
   }
 });
 
+
 // Login ************************************************************************************
 app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password)
-    return res.status(400).json({ message: "Username et password requis" });
+  const { email, password } = req.body;
+  if (!email || !password)
+    return res.status(400).json({ message: "Email et mot de passe requis" });
 
   try {
-  const [rows] = await pool.execute("SELECT id,username,password,role FROM users WHERE username = ?", [username]) ;
+    const [rows] = await pool.execute(
+      "SELECT id, username, email, password, role FROM users WHERE email = ?",
+      [email]
+    );
+
     if (rows.length === 0)
       return res.status(400).json({ message: "Utilisateur non trouvé" });
 
     const user = rows[0];
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(400).json({ message: "Mot de passe incorrect" });
+    if (!valid)
+      return res.status(400).json({ message: "Mot de passe incorrect" });
 
     const token = jwt.sign(
-  { id: user.id, username: user.username, role: user.role },
-  JWT_SECRET,
-  { expiresIn: "8h" }
-);
-
+      { id: user.id, username: user.username, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "8h" }
+    );
 
     res.json({ token });
   } catch (err) {
@@ -319,6 +355,7 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
+
 
 //route pour emvoyer un email au users
 
@@ -351,7 +388,7 @@ async function verifierEtEnvoyerLien() {
     `;
 
     Email.send({
-      SecureToken: "f24e5b69-749a-4b29-b569-6f37f553687e",
+      SecureToken: "351b9ae4-4350-4aa0-92a1-cae12e534c47",
       To: email,
       From: "todo.app.services.mali@gmail.com",
       Subject: "Lien de réinitialisation du mot de passe",

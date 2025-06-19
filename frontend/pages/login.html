@@ -4,10 +4,39 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="../styles/style.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&display=swap" rel="stylesheet" />
   <title>Connexion</title>
+  <style>
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background-color: #333;
+      color: #fff;
+      padding: 15px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      transform: translateY(30px);
+      z-index: 9999;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    input.invalid {
+      border: 1px solid red;
+      animation: shake 0.3s;
+    }
+    @keyframes shake {
+      0% { transform: translateX(0px); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-5px); }
+      100% { transform: translateX(0px); }
+    }
+  </style>
 </head>
 <body class="main">
   <div class="iphone">
@@ -15,51 +44,86 @@
       <h3 id="messageBv">Heureux de vous revoir</h3>
       <p class="form-title">Se connecter</p>
       <div class="input-container">
-        <input type="text" name="username" placeholder="Nom d'utilisateur" required />
+        <input type="email" name="email" id="email" placeholder="Adresse email" required />
       </div>
       <div class="input-container">
-        <input type="password" name="password" placeholder="Mot de passe" required />
+        <input type="password" name="password" id="password" placeholder="Mot de passe" required />
       </div>
       <button type="submit" class="submit">Connexion</button>
       <p class="signup-link">
-        Pas de compte ?
-        <a href="signup.html">S’inscrire</a>
+        Pas de compte ? <a href="signup.html">S’inscrire</a>
       </p>
-       <p class="forgot-password-link">
-      <a href="forgot-password.html">Mot de passe oublié ?</a>
-    </p>
+      <p class="forgot-password-link">
+        <a href="forgot-password.html">Mot de passe oublié ?</a>
+      </p>
     </form>
-
-    <!-- Nouveau lien pour mot de passe oublié -->
   </div>
+
+  <div class="toast" id="toast"></div>
 
   <script>
     const apiUrl = "http://localhost:4001";
 
     const form = document.getElementById("loginForm");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const toast = document.getElementById("toast");
+
+    function showToast(message, isError = false) {
+      toast.textContent = message;
+      toast.style.backgroundColor = isError ? "#c0392b" : "#27ae60";
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 4000);
+    }
+
+    function validateEmail(email) {
+      const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return pattern.test(email);
+    }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const username = form.username.value.trim();
-      const password = form.password.value.trim();
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      let valid = true;
+
+      if (!validateEmail(email)) {
+        emailInput.classList.add("invalid");
+        showToast("❌ Email invalide", true);
+        valid = false;
+      } else {
+        emailInput.classList.remove("invalid");
+      }
+
+      if (password.length < 6) {
+        passwordInput.classList.add("invalid");
+        showToast("❌ Le mot de passe doit contenir au moins 6 caractères", true);
+        valid = false;
+      } else {
+        passwordInput.classList.remove("invalid");
+      }
+
+      if (!valid) return;
 
       try {
-        const res = await fetch(apiUrl + "/login", {
+        const res = await fetch(`${apiUrl}/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ email, password })
         });
 
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || "Erreur de connexion");
-        }
-
         const data = await res.json();
+
+        if (!res.ok) throw new Error(data.message || "Erreur de connexion");
+
         localStorage.setItem("token", data.token);
-        window.location.href = "index.html"; // redirige vers ta page principale
+        showToast("✅ Connexion réussie");
+        setTimeout(() => {
+          window.location.href = "index.html";
+        }, 1500);
       } catch (err) {
-        alert("Erreur : " + err.message);
+        showToast("❌ " + err.message, true);
       }
     });
   </script>
