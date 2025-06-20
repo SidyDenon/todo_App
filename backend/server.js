@@ -25,7 +25,7 @@ io.on('connection', socket => {
 
 const PORT = process.env.PORT || 4001;
 const JWT_SECRET = process.env.JWT_SECRET;
-const url = new URL(process.env.DATABASE_URL);
+const url = new URL(process.env.MYSQL_URL);
 
 // Config BDD MySQL (à adapter)
 const dbConfig = {
