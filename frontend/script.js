@@ -1,4 +1,4 @@
-const API_BASE = "todoapp-production-a928.up.railway.app";
+const API_BASE = "https://todo-app-production-a928.up.railway.app";
 
 // Sélecteurs
 const usernameSpan = document.querySelector(".Username");

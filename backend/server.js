@@ -44,7 +44,10 @@ const pool = mysql.createPool(dbConfig);
 
 // Middleware
 app.use(cors({
-  origin: [ "http://localhost:4001", "https://ton-frontend.vercel.app" ],
+  origin: [
+    "http://localhost:3000",
+    "https://todo-app-one-chi-59.vercel.app"
+  ],
   credentials: true
 }));
 
@@ -243,7 +246,7 @@ app.post("/forgot-password", async (req, res) => {
     const resetToken = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
 const baseUrl = process.env.APP_URL || `http://localhost:${PORT}`;
-const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
+const resetLink = `${baseUrl}/pages/reset-password.html?token=${resetToken}`;
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
