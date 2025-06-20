@@ -522,8 +522,12 @@ function startNotifications() {
 
 function updateButtonText() {
   const enabled = localStorage.getItem("notificationsEnabled") === "true";
-  toggleBtn.textContent = enabled ? "🔔" : "🔕";
+  const icon = toggleBtn.querySelector("i");
+  if (!icon) return;
+
+  icon.className = enabled ? "fas fa-bell" : "fas fa-bell-slash";
 }
+
 
 toggleBtn.addEventListener("click", () => {
   const enabled = localStorage.getItem("notificationsEnabled") === "true";

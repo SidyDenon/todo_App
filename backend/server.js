@@ -25,13 +25,15 @@ io.on('connection', socket => {
 
 const PORT = process.env.PORT || 4001;
 const JWT_SECRET = process.env.JWT_SECRET;
+const url = new URL(process.env.DATABASE_URL);
 
 // Config BDD MySQL (à adapter)
 const dbConfig = {
-  host: "localhost",
-  user: "root",
-  password: process.env.DB_PASSWORD,
-  database: "todo_app",
+  host: url.hostname,
+  user: url.username,
+  password: url.password,
+  database: url.pathname.slice(1),
+  port: parseInt(url.port),
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
