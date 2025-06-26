@@ -25,15 +25,13 @@ io.on('connection', socket => {
 
 const PORT = process.env.PORT || 4001;
 const JWT_SECRET = process.env.JWT_SECRET;
-const url = new URL(process.env.MYSQL_URL);
 
 // Config BDD MySQL (à adapter)
 const dbConfig = {
-  host: url.hostname,
-  user: url.username,
-  password: url.password,
-  database: url.pathname.slice(1),
-  port: parseInt(url.port),
+  host: "localhost",
+  user: "root",
+  password: process.env.DB_PASSWORD,
+  database: "todo_app",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -43,16 +41,8 @@ const dbConfig = {
 const pool = mysql.createPool(dbConfig);
 
 // Middleware
-app.use(cors({
-  origin: [
-    "http://localhost:3000",
-    "https://todo-app-one-chi-59.vercel.app"
-  ],
-  credentials: true
-}));
-
-
-app.use(express.json());
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, "../frontend"))); // sert le front depuis /frontend
 
 // Middleware pour vérifier token
@@ -245,8 +235,7 @@ app.post("/forgot-password", async (req, res) => {
     const user = users[0];
     const resetToken = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
-const baseUrl = process.env.APP_URL || `http://localhost:${PORT}`;
-const resetLink = `${baseUrl}/pages/reset-password.html?token=${resetToken}`;
+    const resetLink = `http://localhost:4001/reset-password?token=${resetToken}`;
 
     const transporter = nodemailer.createTransport({
       service: "gmail",

@@ -1,4 +1,4 @@
-const API_BASE = "https://todo-app-production-a928.up.railway.app";
+const API_BASE = "http://localhost:4001";
 
 // Sélecteurs
 const usernameSpan = document.querySelector(".Username");
@@ -24,6 +24,9 @@ const ecran2 = document.querySelector(".category-detail-ecran");
 const retour = document.querySelector(".fa-arrow-left-long");
 const themeBox = document.querySelector(".themes"); 
 const adminBtn = document.getElementById("admin-btn");
+const modal = document.getElementById("notifModal");
+const notifYes = document.getElementById("notifYes");
+const notifNo = document.getElementById("notifNo");
 
 // Nouveaux éléments ajoutés à ton HTML, à vérifier dans le DOM :
 const categoriesContainer = document.querySelector(".categories");
@@ -493,30 +496,40 @@ function startNotifications() {
 
   // Notification début de journée à 8h
   scheduleNotification(8, 0, () => {
-    fetch(API_BASE + "/tasks", { headers: { Authorization: "Bearer " + token } })
-      .then(res => res.json())
-      .then(tasks => {
-        if (tasks.length === 0) {
-          sendNotification("Planifie ta journée", "Tu n'as pas de tâches aujourd'hui, pense à en ajouter.");
-        } else {
-          sendNotification("Bonne journée", `Tu as ${tasks.length} tâche(s) aujourd'hui.`);
-        }
-      })
-      .catch(() => {
-        sendNotification("Erreur", "Impossible de récupérer tes tâches.");
-      });
+    fetch(API_BASE + "/tasks", {
+      headers: { Authorization: "Bearer " + token }
+    })
+    .then(async res => {
+      if (!res.ok) throw new Error("Réponse invalide");
+      return res.json();
+    })
+    .then(tasks => {
+      sendNotification("Bonne journée", `Tu as ${tasks.length} tâche(s) aujourd'hui.`);
+    })
+    .catch(err => {
+      console.error("Erreur récupération tâches :", err);
+      sendNotification("Erreur", "Impossible de récupérer tes tâches.");
+    });
+
   });
 
   // Notification fin de journée à 20h
   scheduleNotification(20, 0, () => {
-     fetch(API_BASE + "/tasks", { headers: { Authorization: "Bearer " + token } })
-      .then(res => res.json())
-      .then(tasks => {
-        sendNotification("Résumé de ta journée", `Tu as eu ${tasks.length} tâche(s) aujourd'hui.`);
-      })
-      .catch(() => {
-        sendNotification("Erreur", "Impossible de récupérer tes tâches.");
-      });
+     fetch(API_BASE + "/tasks", {
+      headers: { Authorization: "Bearer " + token }
+    })
+    .then(async res => {
+      if (!res.ok) throw new Error("Réponse invalide");
+      return res.json();
+    })
+    .then(tasks => {
+      sendNotification("Résumé de ta journée", `Tu as eu ${tasks.length} tâche(s) aujourd'hui.`);
+    })
+    .catch(err => {
+      console.error("Erreur récupération tâches :", err);
+      sendNotification("Erreur", "Impossible de récupérer tes tâches.");
+    });
+
   });
 }
 
@@ -533,21 +546,41 @@ toggleBtn.addEventListener("click", () => {
   const enabled = localStorage.getItem("notificationsEnabled") === "true";
 
   if (!enabled) {
-    Notification.requestPermission().then(permission => {
-      if (permission === "granted") {
-        localStorage.setItem("notificationsEnabled", "true");
-        updateButtonText();
-        showToast("✅ Notifications activées");
-        startNotifications();
-      } else {
-        showToast("❌ Autorisation refusée");
-      }
-    });
+    modal.classList.add("show");
   } else {
     localStorage.setItem("notificationsEnabled", "false");
     updateButtonText();
     showToast("🔕 Notifications désactivées");
   }
+});
+
+notifYes.addEventListener("click", async () => {
+  modal.classList.remove("show");
+
+  if (!("Notification" in window)) {
+    showToast("❌ Notifications non supportées.");
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission === "granted") {
+    localStorage.setItem("notificationsEnabled", "true");
+    updateButtonText();
+    showToast("✅ Notifications activées");
+    sendNotification("Activées", "Vous recevrez des rappels quotidiens.");
+    startNotifications();
+  } else {
+    showToast("❌ Autorisation refusée");
+  }
+});
+
+notifNo.addEventListener("click", () => {
+  modal.classList.remove("show");
+});
+
+// Permet de fermer la modale en cliquant dehors
+window.addEventListener("click", (e) => {
+  if (e.target === modal) modal.classList.remove("show");
 });
 
 // Initialisation au chargement
@@ -626,6 +659,8 @@ addTaskBtn.addEventListener("click", () => {
   addTaskBtn.classList.toggle("active");
   boxTache.classList.toggle("active");
   filtre.classList.toggle("active");
+  categoriesSelect.value = selectCategory.title;
+
 });
 cancelBtn.addEventListener("click", (e) => {
   e.preventDefault();

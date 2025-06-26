@@ -20,11 +20,22 @@
 </head>
 <body class="main">
   <div class="iphone">
-            <div class="clos-notif"><button id="notification-toggle">
-  <i class="fas fa-bell"></i>
-</button>
-
-                    <div id="toast"></div></div>
+            <div class="clos-notif">
+                <button id="notification-toggle">
+                    <i class="fas fa-bell"></i>
+                </button>
+                <div id="toast"></div>
+            </div>
+            <div id="notifModal" class="modal hidden">
+                <div class="modal-content">
+                    <h2>Activer les notifications ?</h2>
+                    <p>Souhaitez-vous recevoir des rappels à 8h et 20h ?</p>
+                    <div class="modal-actions">
+                    <button id="notifYes">Oui</button>
+                    <button id="notifNo">Non</button>
+                    </div>
+                </div>
+            </div>
             <div class="themes">
                 <i class="fa-solid fa-sun " id="toggleSunBtn"></i>
                 <i class="fa-solid fa-moon" id="toggleMoonBtn"></i>
@@ -125,15 +136,15 @@
                     <div class="modifier" id="modifier">
                         <i class="fa-solid fa-pen-to-square"></i>
                     </div>
-                    <div id="user-profile-form" class="hidden" style="padding:1rem; background:var(--color-box-bg); border-radius:6px; box-shadow:0 2px 6px var(--color-shadow); margin-top:1rem; max-width: (500px, 100%)">
-                    <label>Nom d’utilisateur<br>
-                        <input type="text" id="user-profile-username" style="width:100%; padding:.5rem; margin-bottom:.5rem;">
-                    </label><br>
-                    <label>Avatar<br>
-                        <input type="file" id="user-profile-avatar" accept="image/*">
-                    </label><br><br>
-                    <button id="user-profile-submit">Enregistrer</button>
-                    <button id="user-profile-cancel">Annuler</button>
+                    <div id="user-profile-form" class="hidden" style="width: 100%; padding:1rem; background:var(--color-box-bg); border-radius:6px; box-shadow:0 2px 6px var(--color-shadow); margin-top:1rem; max-width: (500px, 100%); overflow: hidden;">
+                        <label>Nom d’utilisateur<br>
+                            <input type="text" id="user-profile-username" style="text-wrap: wrap;width:100%; padding:.5rem; margin-bottom:.5rem;">
+                        </label><br>
+                        <label>Avatar<br>
+                            <input type="file" id="user-profile-avatar" accept="image/*" style="color: var(--color-text); text-wrap: wrap;">
+                        </label><br><br>
+                        <button id="user-profile-submit" style="background-color: var(--color-primary); padding: 10px; border-radius: 8px;border: none; color: var(--color-text);">Enregistrer</button>
+                        <button id="user-profile-cancel" style="background-color: var(--color-primary); padding: 10px; border-radius: 8px;border: none; color: var(--color-text);">Annuler</button>
                     </div>
                     <!-- ex. dans le <header> -->
                     <div id="user-info">
@@ -144,7 +155,7 @@
 
                 </div>
                 <div class="bottom">
-                    <a id="admin-btn" href="admin.html" style="display:none; text-decoration: none; color: #2e2e2e; background-color: aqua; padding: 5px; border-radius: 10px; bottom: 70px; font-size: 1.1rem; right: 30%; font-weight: bold;cursor: pointer; text-align: center;  &:hover {
+                    <a id="admin-btn" href="admin.html" style="display:none; text-decoration: none; color: #2e2e2e; background-color: var(--color-primary); padding: 5px; border-radius: 10px; bottom: 70px; font-size: 1.1rem; right: 30%; font-weight: bold;cursor: pointer; text-align: center;  &:hover {
                                     opacity: .8;
                                 }">
                         Dashboard Admin
